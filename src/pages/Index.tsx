@@ -1,9 +1,15 @@
 import { Hand, MessageSquareText, Volume2 } from "lucide-react";
 import FeatureToggle from "@/components/FeatureToggle";
+import TranslationOutput from "@/components/TranslationOutput";
 import { toast } from "sonner";
+import { useState } from "react";
 
 const Index = () => {
+  const [signToTextEnabled, setSignToTextEnabled] = useState(false);
+  const [signToSpeechEnabled, setSignToSpeechEnabled] = useState(false);
+
   const handleSignLanguageToggle = (enabled: boolean) => {
+    setSignToTextEnabled(enabled);
     if (enabled) {
       toast.success("Sign Language to Text enabled", {
         description: "Camera access will be requested"
@@ -14,6 +20,7 @@ const Index = () => {
   };
 
   const handleSignToSpeechToggle = (enabled: boolean) => {
+    setSignToSpeechEnabled(enabled);
     if (enabled) {
       toast.success("Sign Language to Speech enabled", {
         description: "Translates gestures directly to audio"
@@ -55,6 +62,9 @@ const Index = () => {
             onToggle={handleSignToSpeechToggle}
           />
         </div>
+
+        {/* Translation Output */}
+        <TranslationOutput isActive={signToTextEnabled} />
 
         {/* Footer Info */}
         <div className="text-center pt-4">
