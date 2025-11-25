@@ -1,12 +1,22 @@
 import { Hand, MessageSquareText, Volume2 } from "lucide-react";
 import FeatureToggle from "@/components/FeatureToggle";
 import TranslationOutput from "@/components/TranslationOutput";
+import CameraPreview from "@/components/CameraPreview";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const Index = () => {
   const [signToTextEnabled, setSignToTextEnabled] = useState(false);
   const [signToSpeechEnabled, setSignToSpeechEnabled] = useState(false);
+  const translationRef = useRef<{ addText: (text: string) => void } | null>(null);
+
+  const handleGestureDetected = (gesture: string) => {
+    // This will be called when MediaPipe detects a gesture
+    console.log("Gesture detected:", gesture);
+    if (translationRef.current) {
+      translationRef.current.addText(gesture);
+    }
+  };
 
   const handleSignLanguageToggle = (enabled: boolean) => {
     setSignToTextEnabled(enabled);
@@ -63,8 +73,17 @@ const Index = () => {
           />
         </div>
 
+        {/* Camera Preview */}
+        <CameraPreview 
+          isActive={signToTextEnabled} 
+          onGestureDetected={handleGestureDetected}
+        />
+
         {/* Translation Output */}
-        <TranslationOutput isActive={signToTextEnabled} />
+        <TranslationOutput 
+          isActive={signToTextEnabled}
+          ref={translationRef}
+        />
 
         {/* Footer Info */}
         <div className="text-center pt-4">
