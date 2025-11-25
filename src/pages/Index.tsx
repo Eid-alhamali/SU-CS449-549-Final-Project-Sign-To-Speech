@@ -1,4 +1,4 @@
-import { Languages, Volume2 } from "lucide-react";
+import { Hand, MessageSquareText, Volume2 } from "lucide-react";
 import FeatureToggle from "@/components/FeatureToggle";
 import { toast } from "sonner";
 
@@ -13,13 +13,13 @@ const Index = () => {
     }
   };
 
-  const handleTextToSpeechToggle = (enabled: boolean) => {
+  const handleSignToSpeechToggle = (enabled: boolean) => {
     if (enabled) {
-      toast.success("Text to Speech enabled", {
-        description: "Ready to convert text to audio"
+      toast.success("Sign Language to Speech enabled", {
+        description: "Translates gestures directly to audio"
       });
     } else {
-      toast.info("Text to Speech disabled");
+      toast.info("Sign Language to Speech disabled");
     }
   };
 
@@ -29,7 +29,7 @@ const Index = () => {
         {/* Header */}
         <div className="text-center space-y-2 pt-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-lg mb-2">
-            <Languages className="h-8 w-8" />
+            <Hand className="h-8 w-8" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
             Sign Translator
@@ -44,15 +44,15 @@ const Index = () => {
           <FeatureToggle
             title="Sign Language to Text"
             description="Translate sign language gestures to written text"
-            icon={Languages}
+            icon={MessageSquareText}
             onToggle={handleSignLanguageToggle}
           />
 
           <FeatureToggle
-            title="Text to Speech"
-            description="Convert written text to spoken audio"
+            title="Sign Language to Speech"
+            description="Translate sign language gestures directly to spoken audio"
             icon={Volume2}
-            onToggle={handleTextToSpeechToggle}
+            onToggle={handleSignToSpeechToggle}
           />
         </div>
 
