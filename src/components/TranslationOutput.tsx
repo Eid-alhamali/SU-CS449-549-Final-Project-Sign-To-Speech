@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef, useImperativeHandle } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Trash2, Loader2 } from "lucide-react";
@@ -9,40 +9,54 @@ interface TranslationOutputProps {
   isActive: boolean;
 }
 
-const TranslationOutput = ({ isActive }: TranslationOutputProps) => {
-  const [translatedText, setTranslatedText] = useState("");
-  const [isDetecting, setIsDetecting] = useState(false);
+export interface TranslationOutputRef {
+  addText: (text: string) => void;
+}
 
-  const handleCopy = async () => {
-    if (!translatedText) return;
-    
-    try {
-      await navigator.clipboard.writeText(translatedText);
-      toast.success("Copied to clipboard");
-    } catch (error) {
-      toast.error("Failed to copy text");
-    }
-  };
+const TranslationOutput = forwardRef<TranslationOutputRef, TranslationOutputProps>(
+  ({ isActive }, ref) => {
+    const [translatedText, setTranslatedText] = useState("");
+    const [isDetecting, setIsDetecting] = useState(false);
 
-  const handleClear = () => {
-    setTranslatedText("");
-    toast.info("Translation cleared");
-  };
+    // Expose methods to parent component
+    useImperativeHandle(ref, () => ({
+      addText: (text: string) => {
+        setTranslatedText(prev => prev ? `${prev} ${text}` : text);
+        setIsDetecting(true);
+        setTimeout(() => setIsDetecting(false), 1000);
+      }
+    }));
 
-  // Simulate gesture detection (this will be replaced with actual ML model)
-  const simulateGestureDetection = () => {
-    const sampleTexts = [
-      "Hello, how are you?",
-      "Thank you for your help.",
-      "I need assistance.",
-      "Good morning!",
-      "See you later.",
-    ];
-    const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
-    setTranslatedText(prev => prev ? `${prev} ${randomText}` : randomText);
-  };
+    const handleCopy = async () => {
+      if (!translatedText) return;
+      
+      try {
+        await navigator.clipboard.writeText(translatedText);
+        toast.success("Copied to clipboard");
+      } catch (error) {
+        toast.error("Failed to copy text");
+      }
+    };
 
-  if (!isActive) return null;
+    const handleClear = () => {
+      setTranslatedText("");
+      toast.info("Translation cleared");
+    };
+
+    // Simulate gesture detection (this will be replaced with actual ML model)
+    const simulateGestureDetection = () => {
+      const sampleTexts = [
+        "Hello, how are you?",
+        "Thank you for your help.",
+        "I need assistance.",
+        "Good morning!",
+        "See you later.",
+      ];
+      const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+      setTranslatedText(prev => prev ? `${prev} ${randomText}` : randomText);
+    };
+
+    if (!isActive) return null;
 
   return (
     <Card className="border-2 border-primary/20 bg-card shadow-lg">
@@ -118,6 +132,8 @@ const TranslationOutput = ({ isActive }: TranslationOutputProps) => {
       </div>
     </Card>
   );
-};
+});
+
+TranslationOutput.displayName = "TranslationOutput";
 
 export default TranslationOutput;
