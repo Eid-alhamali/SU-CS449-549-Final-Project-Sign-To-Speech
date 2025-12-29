@@ -10,36 +10,42 @@ import { useState, useRef } from "react";
 const Index = () => {
   const navigate = useNavigate();
   const [signToTextEnabled, setSignToTextEnabled] = useState(false);
-  const [signToSpeechEnabled, setSignToSpeechEnabled] = useState(false);
-  const translationRef = useRef<{ addText: (text: string) => void } | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const translationRef = useRef<{ addText: (text: string) => void, getText?: () => string } | null>(null);
 
   const handleGestureDetected = (gesture: string) => {
-    // This will be called when MediaPipe detects a gesture
-    console.log("Gesture detected:", gesture);
+    // Prevent spamming the same character
     if (translationRef.current) {
-      translationRef.current.addText(gesture);
+      // Access the last added text to check for duplicates
+      // @ts-ignore - We are accessing internal state or we need to track it manually
+      const currentText = translationRef.current.getText ? translationRef.current.getText() : "";
+      const lastChar = currentText.slice(-1);
+
+      if (lastChar !== gesture) {
+        translationRef.current.addText(gesture);
+      }
     }
   };
 
   const handleSignLanguageToggle = (enabled: boolean) => {
     setSignToTextEnabled(enabled);
+    if (!enabled) setIsDetecting(false);
+
     if (enabled) {
       toast.success("Sign Language to Text enabled", {
-        description: "Camera access will be requested"
+        description: "Camera sections visible. Click Start Detecting to begin."
       });
     } else {
       toast.info("Sign Language to Text disabled");
     }
   };
 
-  const handleSignToSpeechToggle = (enabled: boolean) => {
-    setSignToSpeechEnabled(enabled);
-    if (enabled) {
-      toast.success("Sign Language to Speech enabled", {
-        description: "Translates gestures directly to audio"
-      });
+  const handleToggleDetection = () => {
+    setIsDetecting(prev => !prev);
+    if (!isDetecting) {
+      toast.success("Detection Started", { description: "Camera active" });
     } else {
-      toast.info("Sign Language to Speech disabled");
+      toast.info("Detection Stopped");
     }
   };
 
@@ -67,39 +73,40 @@ const Index = () => {
             icon={MessageSquareText}
             onToggle={handleSignLanguageToggle}
           />
-
-          <FeatureToggle
-            title="Sign Language to Speech"
-            description="Translate sign language gestures directly to spoken audio"
-            icon={Volume2}
-            onToggle={handleSignToSpeechToggle}
-          />
         </div>
 
-        {/* Camera Preview */}
-        <CameraPreview 
-          isActive={signToTextEnabled} 
-          onGestureDetected={handleGestureDetected}
-        />
+        {/* Features Area - Visible if toggle enabled */}
+        {signToTextEnabled && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-        {/* Translation Output */}
-        <TranslationOutput 
-          isActive={signToTextEnabled}
-          ref={translationRef}
-        />
+            {/* Camera Preview */}
+            <CameraPreview
+              isActive={isDetecting}
+              onGestureDetected={handleGestureDetected}
+            />
+
+            {/* Translation Output with Controls */}
+            <TranslationOutput
+              ref={translationRef}
+              isDetecting={isDetecting}
+              onToggleDetection={handleToggleDetection}
+            />
+
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <Button 
-            onClick={() => navigate("/meeting")} 
+          <Button
+            onClick={() => navigate("/meeting")}
             className="flex-1 gap-2"
             size="lg"
           >
             <Video className="h-4 w-4" />
             Join Meeting
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="lg"
             onClick={() => navigate("/accessibility")}
           >
