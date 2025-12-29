@@ -1,11 +1,14 @@
-import { Hand, MessageSquareText, Volume2 } from "lucide-react";
+import { Hand, MessageSquareText, Volume2, Settings, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import FeatureToggle from "@/components/FeatureToggle";
 import TranslationOutput from "@/components/TranslationOutput";
 import CameraPreview from "@/components/CameraPreview";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState, useRef } from "react";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [signToTextEnabled, setSignToTextEnabled] = useState(false);
   const [signToSpeechEnabled, setSignToSpeechEnabled] = useState(false);
   const translationRef = useRef<{ addText: (text: string) => void } | null>(null);
@@ -84,6 +87,25 @@ const Index = () => {
           isActive={signToTextEnabled}
           ref={translationRef}
         />
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => navigate("/meeting")} 
+            className="flex-1 gap-2"
+            size="lg"
+          >
+            <Video className="h-4 w-4" />
+            Join Meeting
+          </Button>
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={() => navigate("/accessibility")}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
 
         {/* Footer Info */}
         <div className="text-center pt-4">
