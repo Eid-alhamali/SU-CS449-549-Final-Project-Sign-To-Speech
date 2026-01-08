@@ -27,7 +27,7 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
         const vision = await FilesetResolver.forVisionTasks(
           "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
         );
-        
+
         const landmarker = await HandLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -39,7 +39,7 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
           minHandPresenceConfidence: 0.5,
           minTrackingConfidence: 0.5
         });
-        
+
         setHandLandmarker(landmarker);
         console.log("MediaPipe Hand Landmarker initialized");
       } catch (error) {
@@ -79,11 +79,8 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
         streamRef.current = stream;
         setIsCameraActive(true);
         toast.success("Camera started");
-        
-        // Start detection loop
-        videoRef.current.onloadedmetadata = () => {
-          detectHands();
-        };
+
+
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
@@ -110,9 +107,38 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
     toast.info("Camera stopped");
   };
 
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+
+  // Initialize WebSocket
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8000/ws/predict");
+
+    ws.onopen = () => {
+      console.log("Connected to Backend AI");
+      toast.success("Connected to AI Model");
+    };
+
+    ws.onmessage = (event) => {
+      const prediction = event.data;
+      if (onGestureDetected && prediction && prediction !== "?") {
+        onGestureDetected(prediction);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    setSocket(ws);
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   // Detect hands in video
   const detectHands = () => {
-    if (!videoRef.current || !canvasRef.current || !handLandmarker || !isCameraActive) {
+    if (!videoRef.current || !canvasRef.current || !handLandmarker) {
       return;
     }
 
@@ -139,7 +165,7 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
     // Draw hand landmarks
     if (results.landmarks && results.landmarks.length > 0) {
       const drawingUtils = new DrawingUtils(ctx);
-      
+
       for (const landmarks of results.landmarks) {
         // Draw connections
         drawingUtils.drawConnectors(
@@ -147,19 +173,19 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
           HandLandmarker.HAND_CONNECTIONS,
           { color: "rgba(24, 184, 196, 0.8)", lineWidth: 3 }
         );
-        
+
         // Draw landmarks
         drawingUtils.drawLandmarks(
           landmarks,
           { color: "rgba(255, 107, 107, 0.9)", lineWidth: 2, radius: 4 }
         );
-      }
 
-      // Simulate gesture detection (this would be replaced with actual gesture recognition)
-      if (onGestureDetected && Math.random() > 0.98) {
-        const gestures = ["Hello", "Thank you", "Yes", "No", "Please"];
-        const randomGesture = gestures[Math.floor(Math.random() * gestures.length)];
-        onGestureDetected(randomGesture);
+        // Send landmarks to backend
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          // Extract x, y, z
+          const simplifiedLandmarks = landmarks.map(lm => ({ x: lm.x, y: lm.y, z: lm.z }));
+          socket.send(JSON.stringify(simplifiedLandmarks));
+        }
       }
     }
 
@@ -167,14 +193,24 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
     animationFrameRef.current = requestAnimationFrame(detectHands);
   };
 
-  // Handle active state changes
+  // Handle active state changes & Detection Loop
   useEffect(() => {
     if (isActive && handLandmarker && !isCameraActive) {
       startCamera();
     } else if (!isActive && isCameraActive) {
       stopCamera();
     }
-  }, [isActive, handLandmarker]);
+
+    // Manage Detection Loop
+    if (isActive && isCameraActive && handLandmarker && videoRef.current) {
+      detectHands();
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    }
+  }, [isActive, handLandmarker, isCameraActive]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -183,7 +219,7 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
     };
   }, []);
 
-  if (!isActive) return null;
+
 
   return (
     <Card className="border-2 border-secondary/20 bg-card shadow-lg overflow-hidden">
@@ -191,7 +227,7 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Camera Preview</h3>
-          
+
           {isCameraActive ? (
             <Button
               variant="outline"
@@ -232,7 +268,7 @@ const CameraPreview = ({ isActive, onGestureDetected }: CameraPreviewProps) => {
               !isCameraActive && "hidden"
             )}
           />
-          
+
           <canvas
             ref={canvasRef}
             className="absolute inset-0 w-full h-full object-cover"
