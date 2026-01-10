@@ -28,3 +28,4 @@ backend-ai/venv/
 backend-ai/__pycache__/
 *.pyc
 
+/.venv
